@@ -1,0 +1,33 @@
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stats-grid .card {
+  position: relative;
+}
+
+.stat-icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  opacity: 0.7;
+}
+
+.dashboard-placeholder {
+  margin-top: 8px;
+}
+
+.placeholder-text {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
+}

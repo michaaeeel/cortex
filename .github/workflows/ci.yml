@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: cortex_test
+          POSTGRES_USER: cortex
+          POSTGRES_PASSWORD: cortex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements.txt
+      - run: python backend/manage.py check
+        env:
+          DJANGO_SETTINGS_MODULE: cortex.settings.dev
+          DATABASE_URL: postgres://cortex:cortex@localhost:5432/cortex_test
+      - run: python backend/manage.py test
+        env:
+          DJANGO_SETTINGS_MODULE: cortex.settings.dev
+          DATABASE_URL: postgres://cortex:cortex@localhost:5432/cortex_test
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: cd frontend && npm ci
+      - run: cd frontend && npm run build
+
+  ml-services:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r ml-services/requirements.txt
+      - run: python -c "from app.main import app; print('ML service imports OK')"
+        working-directory: ml-services

@@ -1,4 +1,28 @@
+# Python
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+.eggs/
+db.sqlite3
+
+# Node
+node_modules/
+dist/
+
+# Environment
 .env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log

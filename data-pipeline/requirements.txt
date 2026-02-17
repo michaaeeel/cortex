@@ -1,0 +1,4 @@
+celery[redis]>=5.3
+redis>=5.0
+httpx>=0.25
+python-decouple>=3.8
