@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN adduser --disabled-password --gecos "" --no-create-home appuser
+USER appuser
+
 EXPOSE 8000
 
 CMD ["gunicorn", "cortex.wsgi:application", "--bind", "0.0.0.0:8000"]

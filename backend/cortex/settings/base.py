@@ -6,9 +6,12 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="insecure-dev-key-change-me")
+SECRET_KEY = config("DJANGO_SECRET_KEY")
+
+ML_INTERNAL_API_KEY = config("ML_INTERNAL_API_KEY", default="")
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -20,13 +23,17 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "django_filters",
+    "channels",
     # Local apps
     "users",
     "campaigns",
     "data_sources",
     "analytics",
     "reports",
+    "realtime",
 ]
+
+ASGI_APPLICATION = "cortex.asgi.application"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -86,6 +93,16 @@ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+
+# Channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [config("REDIS_URL", default="redis://redis:6379/0")],
+        },
+    },
+}
 
 # Static files
 STATIC_URL = "static/"

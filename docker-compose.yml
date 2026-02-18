@@ -1,3 +1,17 @@
+x-django-common: &django-common
+  build: ./backend
+  environment:
+    DJANGO_SETTINGS_MODULE: cortex.settings.dev
+    DATABASE_URL: postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex}@db:5432/${POSTGRES_DB:-cortex}
+    REDIS_URL: redis://redis:6379/0
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+    ML_INTERNAL_API_KEY: ${ML_INTERNAL_API_KEY:-}
+  volumes:
+    - ./backend:/app
+  depends_on:
+    - db
+    - redis
+
 services:
   db:
     image: postgres:15-alpine
@@ -6,43 +20,38 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-cortex}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortex}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
   backend:
-    build: ./backend
-    command: python manage.py runserver 0.0.0.0:8000
-    environment:
-      DJANGO_SETTINGS_MODULE: cortex.settings.dev
-      DATABASE_URL: postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex}@db:5432/${POSTGRES_DB:-cortex}
-      REDIS_URL: redis://redis:6379/0
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-insecure-dev-key}
+    <<: *django-common
+    command: daphne -b 0.0.0.0 -p 8000 cortex.asgi:application
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - db
-      - redis
 
   celery-worker:
-    build: ./backend
+    <<: *django-common
     command: celery -A cortex worker -l info
+
+  stream-consumer:
+    <<: *django-common
+    command: python manage.py consume_events
+
+  event-simulator:
+    build: ./data-pipeline
+    command: python simulator.py
     environment:
-      DJANGO_SETTINGS_MODULE: cortex.settings.dev
-      DATABASE_URL: postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex}@db:5432/${POSTGRES_DB:-cortex}
       REDIS_URL: redis://redis:6379/0
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-insecure-dev-key}
+      SIMULATOR_INTERVAL: "2"
     volumes:
-      - ./backend:/app
+      - ./data-pipeline:/app
     depends_on:
-      - db
       - redis
 
   frontend:
@@ -57,8 +66,9 @@ services:
 
   ml-services:
     build: ./ml-services
-    ports:
-      - "8001:8001"
+    environment:
+      ML_ANTHROPIC_API_KEY: ${ML_ANTHROPIC_API_KEY:-}
+      ML_INTERNAL_API_KEY: ${ML_INTERNAL_API_KEY:-}
     volumes:
       - ./ml-services:/app
 

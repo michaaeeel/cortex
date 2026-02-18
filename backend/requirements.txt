@@ -9,3 +9,7 @@ redis>=5.0
 gunicorn>=21.2
 python-decouple>=3.8
 dj-database-url>=2.1
+httpx>=0.25
+channels>=4.0
+channels-redis>=4.1
+daphne>=4.0
