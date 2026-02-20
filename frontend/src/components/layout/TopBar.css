@@ -33,3 +33,10 @@
   color: var(--color-text);
   background-color: var(--color-bg);
 }
+
+.topbar-user {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  padding: 0 8px;
+}
