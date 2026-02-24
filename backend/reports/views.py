@@ -8,9 +8,14 @@ from .tasks import generate_report
 
 
 class ReportViewSet(viewsets.ModelViewSet):
-    queryset = Report.objects.all()
     serializer_class = ReportSerializer
     filterset_fields = ["report_type", "status", "campaign"]
+
+    def get_queryset(self):
+        return Report.objects.filter(generated_by=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(generated_by=self.request.user)
 
     @action(detail=True, methods=["post"])
     def generate(self, request, pk=None):

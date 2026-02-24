@@ -10,10 +10,12 @@ from .utils import aggregate_metrics, compute_derived_metrics, calculate_trend, 
 
 
 class MetricSnapshotViewSet(viewsets.ModelViewSet):
-    queryset = MetricSnapshot.objects.all()
     serializer_class = MetricSnapshotSerializer
     filterset_fields = ["campaign", "date"]
     ordering_fields = ["date", "spend", "revenue"]
+
+    def get_queryset(self):
+        return MetricSnapshot.objects.filter(campaign__owner=self.request.user)
 
     @action(detail=False, methods=["get"])
     def summary(self, request):
@@ -36,14 +38,16 @@ class MetricSnapshotViewSet(viewsets.ModelViewSet):
         """GET /analytics/metrics/dashboard/?days=30"""
         days = parse_days_param(request)
 
-        current_qs, previous_qs = get_period_querysets(MetricSnapshot.objects.all(), days)
+        user_campaigns = Campaign.objects.filter(owner=request.user)
+        base_qs = MetricSnapshot.objects.filter(campaign__in=user_campaigns)
+        current_qs, previous_qs = get_period_querysets(base_qs, days)
         current = aggregate_metrics(current_qs)
         previous = aggregate_metrics(previous_qs)
         derived = compute_derived_metrics(current)
 
         return Response({
-            "active_campaigns": Campaign.objects.filter(status="active").count(),
-            "total_campaigns": Campaign.objects.count(),
+            "active_campaigns": user_campaigns.filter(status="active").count(),
+            "total_campaigns": user_campaigns.count(),
             **current,
             **derived,
             "period_days": days,
@@ -58,4 +62,6 @@ class MetricSnapshotViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="dashboard/insights")
     def dashboard_insights(self, request):
         """POST /analytics/metrics/dashboard/insights/ — AI-powered dashboard insights."""
-        return ml_service_post("/api/v1/insights/dashboard", request.data)
+        allowed_keys = {"period_days", "spend", "revenue", "impressions", "clicks", "conversions"}
+        payload = {k: v for k, v in request.data.items() if k in allowed_keys}
+        return ml_service_post("/api/v1/insights/dashboard", payload)

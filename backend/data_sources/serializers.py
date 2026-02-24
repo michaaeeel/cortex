@@ -10,4 +10,4 @@ class DataSourceSerializer(serializers.ModelSerializer):
             "id", "name", "source_type", "is_active",
             "last_sync_at", "owner", "created_at",
         ]
-        read_only_fields = ["id", "last_sync_at", "created_at"]
+        read_only_fields = ["id", "owner", "last_sync_at", "created_at"]

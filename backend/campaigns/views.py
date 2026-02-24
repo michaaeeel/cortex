@@ -10,11 +10,16 @@ from .serializers import CampaignSerializer
 
 
 class CampaignViewSet(viewsets.ModelViewSet):
-    queryset = Campaign.objects.all()
     serializer_class = CampaignSerializer
     filterset_fields = ["status", "platform"]
     search_fields = ["name", "description"]
     ordering_fields = ["created_at", "name", "budget"]
+
+    def get_queryset(self):
+        return Campaign.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
     @action(detail=True, methods=["get"])
     def analytics(self, request, pk=None):

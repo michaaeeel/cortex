@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/metrics/`
+const WS_BASE = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/metrics/`
 const RECONNECT_INTERVAL = 3000
+
+function buildWsUrl() {
+  const token = localStorage.getItem('accessToken')
+  return token ? `${WS_BASE}?token=${encodeURIComponent(token)}` : WS_BASE
+}
 
 export default function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false)
@@ -12,7 +17,7 @@ export default function useWebSocket() {
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-    const ws = new WebSocket(WS_URL)
+    const ws = new WebSocket(buildWsUrl())
 
     ws.onopen = () => {
       setIsConnected(true)
